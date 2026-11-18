@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f1e8">
+  <title>日迹 · 抽一张今天</title>
+  <style>
+    :root {
+      --paper:#f6f2e9;
+      --ink:#1e211f;
+      --muted:#7e807c;
+      --line:#dcd9d0;
+      --accent:#a7553e;
+      --accent-soft:#f0dfd8;
+      --card:#fffdf8;
+    }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; background:var(--paper); color:var(--ink); }
+    body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans CJK SC",sans-serif; }
+    button,input,textarea { font:inherit; color:inherit; }
+    button { cursor:pointer; }
+    .app {
+      width:min(100%,430px);
+      min-height:100dvh;
+      margin:auto;
+      padding:max(20px,env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
+      display:flex;
+      flex-direction:column;
+    }
+    header { display:flex; align-items:center; justify-content:space-between; }
+    .date { font-size:13px; font-weight:750; }
+    .date span { display:block; margin-top:3px; color:var(--muted); font-size:11px; font-weight:500; }
+    .menu-button { width:42px; height:42px; margin-right:-10px; border:0; background:transparent; font-size:22px; letter-spacing:2px; }
+    .progress { display:flex; gap:6px; margin-top:22px; }
+    .progress i { height:4px; flex:1; border-radius:999px; background:var(--line); transition:.25s; }
+    .progress i.filled { background:var(--accent); }
+    .deck { flex:1; display:flex; flex-direction:column; justify-content:center; padding:30px 0 24px; }
+    .card {
+      min-height:390px;
+      padding:25px 23px 22px;
+      border:1px solid rgba(42,43,40,.08);
+      border-radius:28px;
+      background:var(--card);
+      box-shadow:0 18px 48px rgba(58,47,36,.08);
+      display:flex;
+      flex-direction:column;
+    }
+    .card.changed { animation:deal .24s ease; }
+    @keyframes deal { from { opacity:0; transform:translateY(10px) rotate(.4deg); } }
+    .card-meta { display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:12px; }
+    .kind { color:var(--accent); font-weight:800; }
+    h1 { margin:30px 0 12px; font-family:"Songti SC","STSong",serif; font-size:clamp(31px,9vw,41px); line-height:1.3; letter-spacing:-.02em; }
+    .hint { margin:0; color:var(--muted); font-size:14px; line-height:1.75; }
+    .answer { margin-top:auto; padding-top:26px; }
+    .choices { display:flex; flex-wrap:wrap; gap:9px; }
+    .choice { min-height:43px; padding:0 14px; border:1px solid var(--line); border-radius:999px; background:#fff; font-size:13px; }
+    .choice.selected { color:#fff; border-color:var(--accent); background:var(--accent); }
+    textarea {
+      width:100%; min-height:96px; resize:none; padding:14px 15px; border:1px solid var(--line); border-radius:15px; background:#fff;
+      outline:none; line-height:1.6;
+    }
+    textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+    .counter { margin-top:6px; color:var(--muted); text-align:right; font-size:11px; }
+    .save { width:100%; min-height:56px; margin-top:14px; border:0; border-radius:17px; color:#fff; background:var(--ink); font-weight:800; }
+    .save:disabled { color:#a7a7a3; background:#e5e3dc; cursor:default; }
+    .skip { min-height:50px; margin-top:5px; border:0; background:transparent; color:var(--muted); }
+    .today { color:var(--muted); text-align:center; font-size:12px; }
+    .today strong { color:var(--ink); }
+    dialog { width:min(calc(100% - 28px),410px); max-height:86dvh; padding:0; border:0; border-radius:23px; background:#fff; box-shadow:0 24px 80px rgba(0,0,0,.2); }
+    dialog::backdrop { background:rgba(30,32,30,.42); backdrop-filter:blur(3px); }
+    .modal { padding:24px; }
+    .modal h2 { margin:0 0 7px; font-family:"Songti SC",serif; font-size:27px; }
+    .modal>p { margin:0 0 20px; color:var(--muted); font-size:13px; line-height:1.6; }
+    .menu-list { display:grid; gap:9px; }
+    .menu-list button,.close-button { min-height:52px; border:1px solid var(--line); border-radius:14px; background:#fff; }
+    .menu-list button { display:flex; align-items:center; justify-content:space-between; padding:0 16px; text-align:left; }
+    .menu-list small { color:var(--muted); }
+    .close-button { width:100%; margin-top:18px; }
+    .records { display:grid; gap:10px; }
+    .record { padding:14px; border:1px solid var(--line); border-radius:14px; }
+    .record-top { display:flex; justify-content:space-between; gap:12px; margin-bottom:6px; }
+    .record b { font-size:13px; }
+    .record small { color:var(--muted); font-size:11px; }
+    .record p { margin:0; font-size:14px; line-height:1.55; white-space:pre-wrap; word-break:break-word; }
+    .day-group { margin-top:22px; }
+    .day-group:first-child { margin-top:0; }
+    .day-title { display:flex; justify-content:space-between; margin-bottom:9px; font-size:13px; font-weight:800; }
+    .empty { padding:28px 10px; color:var(--muted); text-align:center; font-size:13px; }
+    .toast { position:fixed; left:50%; bottom:30px; z-index:10; transform:translateX(-50%) translateY(8px); padding:11px 17px; border-radius:999px; color:#fff; background:var(--ink); opacity:0; pointer-events:none; transition:.2s; font-size:13px; }
+    .toast.show { opacity:1; transform:translateX(-50%); }
+    @media (prefers-reduced-motion:reduce) { * { animation:none!important; transition:none!important; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="date" id="dateLabel"></div>
+      <button class="menu-button" id="openMenu" aria-label="打开菜单">···</button>
+    </header>
+
+    <div class="progress" id="progress" aria-label="今日记录积分"></div>
+
+    <section class="deck">
+      <article class="card" id="card" aria-live="polite">
+        <div class="card-meta"><span class="kind" id="cardKind"></span><span id="cardNumber"></span></div>
+        <h1 id="question"></h1>
+        <p class="hint" id="hint"></p>
+        <div class="answer" id="answer"></div>
+      </article>
+      <button class="skip" id="skip">换一张</button>
+      <div class="today">今天留下 <strong id="todayCount">0</strong> 个片段 · <strong id="todayScore">+0</strong></div>
+    </section>
+  </main>
+
+  <dialog id="menuDialog">
+    <div class="modal">
+      <h2>日迹</h2>
+      <p>今天留下的片段，会安静地待在这台设备里。</p>
+      <div class="menu-list">
+        <button id="openToday"><span>今天</span><small id="todayMenuText">0 个片段</small></button>
+        <button id="openHistory"><span>往日</span><small>按天回看</small></button>
+        <button id="scoreSummary"><span>累计积分</span><small id="totalScoreText">+0</small></button>
+        <button id="exportJson"><span>导出 JSON</span><small>包含全部日期</small></button>
+      </div>
+      <button class="close-button" data-close>关闭</button>
+    </div>
+  </dialog>
+
+  <dialog id="recordsDialog">
+    <div class="modal">
+      <h2 id="recordsTitle">今天</h2>
+      <p id="recordsIntro"></p>
+      <div class="records" id="records"></div>
+      <button class="close-button" data-close>关闭</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const anchors = [
+      { id:"anchor-sleep", kind:"今日结算", question:"昨晚大约几点睡着？", hint:"选最接近的一档。", type:"single", choices:["23:00 前","23:00—24:00","00:00—01:00","01:00—02:00","02:00 后","记不清"] },
+      { id:"anchor-screen", kind:"今日结算", question:"今天手机屏幕使用了多久？", hint:"可以先看一眼 iPhone 的屏幕使用时间。", type:"single", choices:["2 小时内","2—4 小时","4—6 小时","6—8 小时","8 小时以上","稍后再看"] },
+      { id:"anchor-fields", kind:"今日结算", question:"今天经过了哪些生活部分？", hint:"可以选择不止一项。", type:"multi", choices:["工作","健康","求职","学习","生活","休息"] }
+    ];
+
+    const prompts = [
+      { id:"work-solved", kind:"工作", question:"今天解决了什么小问题？", hint:"一句话就能留下。", type:"text", placeholder:"例如：把一份数据重新核对了一遍" },
+      { id:"work-learned", kind:"工作", question:"今天哪件事比昨天更熟练？", hint:"写动作，也可以只写一个词。", type:"text", placeholder:"例如：整理需求、检查数据……" },
+      { id:"work-used", kind:"工作", question:"今天有人使用了你的什么成果？", hint:"同事、业务方或用户都可以。", type:"text", placeholder:"写下一件具体的事" },
+      { id:"work-heavy", kind:"工作", question:"今天最消耗精力的工作是什么？", hint:"留下名字即可。", type:"text", placeholder:"今天最费劲的是……" },
+      { id:"work-word", kind:"工作", question:"今天学到一个什么词？", hint:"业务词、工具名和流程名都可以。", type:"text", placeholder:"一个词就够了" },
+      { id:"work-future", kind:"工作", question:"今天哪件事以后还会想起？", hint:"可以是一件做成的事，也可以是一次卡住。", type:"text", placeholder:"今天的一个片段" },
+      { id:"body-tired", kind:"身体", question:"今天身体哪里最累？", hint:"点一个最明显的位置。", type:"single", choices:["眼睛","肩颈","腰背","腿脚","头脑","没有明显疲惫"] },
+      { id:"body-move", kind:"身体", question:"今天有过哪一次走动？", hint:"短短一圈也算一个片段。", type:"text", placeholder:"例如：午饭后绕楼走了一圈" },
+      { id:"body-energy", kind:"身体", question:"今天什么时候最有精神？", hint:"选最接近的时段。", type:"single", choices:["上午","午后","傍晚","晚上","今天都比较累"] },
+      { id:"body-care", kind:"身体", question:"今天做过什么身体照顾？", hint:"可以选择几项。", type:"multi", choices:["走路","运动","按时吃饭","喝水","活动肩颈","早点休息"] },
+      { id:"job-thought", kind:"求职观察", question:"今天想起求职时，身体先有什么感觉？", hint:"只记录这一刻的反应。", type:"single", choices:["烦","紧张","疲惫","空白","想逃开","还算平静"] },
+      { id:"job-hard", kind:"求职观察", question:"求职最麻烦的是哪一段？", hint:"选此刻最接近的一项。", type:"single", choices:["不知道从哪开始","整理简历","寻找岗位","填写网申","等待结果","想到求职本身"] },
+      { id:"job-delegate", kind:"求职观察", question:"如果能交出去一步，你最想交出什么？", hint:"写下那一步。", type:"text", placeholder:"我最想有人替我……" },
+      { id:"mood-light", kind:"今天", question:"今天哪一刻比较轻松？", hint:"留下一帧画面。", type:"text", placeholder:"例如：午后出去接水的时候" },
+      { id:"mood-hanging", kind:"今天", question:"什么事情一直挂在心里？", hint:"写出名字，停在这里。", type:"text", placeholder:"一直想着……" },
+      { id:"mood-like", kind:"今天", question:"今天做了什么纯粹因为喜欢？", hint:"再小也可以。", type:"text", placeholder:"我喜欢……" },
+      { id:"mood-scene", kind:"今天", question:"今天最想留下哪个画面？", hint:"天气、路上、办公室和梦都可以。", type:"text", placeholder:"今天的画面是……" },
+      { id:"mood-now", kind:"此刻", question:"此刻更接近哪一种？", hint:"可以同时选择几项。", type:"multi", choices:["平静","疲惫","焦虑","麻木","开心","烦躁"] },
+      { id:"tomorrow-less", kind:"明天", question:"明天最想少操心什么？", hint:"写一件就好。", type:"text", placeholder:"明天想少操心……" },
+      { id:"tomorrow-keep", kind:"明天", question:"明天想继续保持什么？", hint:"从今天带走一件东西。", type:"text", placeholder:"我想继续……" },
+      { id:"tomorrow-one", kind:"明天", question:"明天只往前一点，会是哪件事？", hint:"留下方向，不安排完整计划。", type:"text", placeholder:"明天往前一点的是……" }
+    ];
+
+    const STORAGE_KEY = "riji-v1";
+    const dayKey = () => new Date().toLocaleDateString("sv-SE");
+    const loadState = () => {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { days:{} }; }
+      catch { return { days:{} }; }
+    };
+    const state = loadState();
+    let current = null;
+    let recent = [];
+    let selected = new Set();
+    let textValue = "";
+    const $ = id => document.getElementById(id);
+
+    function today() {
+      const key = dayKey();
+      state.days[key] ||= { records:[] };
+      return state.days[key];
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function answeredIds() {
+      return new Set(today().records.map(r => r.promptId));
+    }
+
+    function availableCards() {
+      const answered = answeredIds();
+      const pendingAnchors = anchors.filter(x => !answered.has(x.id));
+      const other = prompts.filter(x => !recent.slice(-5).includes(x.id));
+      return pendingAnchors.length && Math.random() < .55 ? pendingAnchors : (other.length ? other : prompts);
+    }
+
+    function chooseCard() {
+      const list = availableCards().filter(x => x.id !== current?.id);
+      current = list[Math.floor(Math.random() * list.length)] || prompts[0];
+      recent.push(current.id);
+      selected = new Set();
+      textValue = "";
+      renderCard();
+    }
+
+    function renderCard() {
+      $("cardKind").textContent = current.kind;
+      $("cardNumber").textContent = current.id.startsWith("anchor-") ? "今日三项" : "随机一张";
+      $("question").textContent = current.question;
+      $("hint").textContent = current.hint;
+      $("answer").innerHTML = "";
+
+      if (current.type === "text") {
+        const area = document.createElement("textarea");
+        area.maxLength = 80;
+        area.placeholder = current.placeholder || "写一句话";
+        area.addEventListener("input", () => { textValue = area.value.trim(); updateSave(); $("charCount").textContent = `${area.value.length}/80`; });
+        const count = document.createElement("div");
+        count.className = "counter";
+        count.id = "charCount";
+        count.textContent = "0/80";
+        $("answer").append(area, count);
+      } else {
+        const choices = document.createElement("div");
+        choices.className = "choices";
+        current.choices.forEach(label => {
+          const button = document.createElement("button");
+          button.className = "choice";
+          button.type = "button";
+          button.textContent = label;
+          button.addEventListener("click", () => {
+            if (current.type === "single") {
+              selected.clear();
+              choices.querySelectorAll(".choice").forEach(x => x.classList.remove("selected"));
+              selected.add(label);
+              button.classList.add("selected");
+            } else {
+              selected.has(label) ? selected.delete(label) : selected.add(label);
+              button.classList.toggle("selected");
+            }
+            updateSave();
+          });
+          choices.append(button);
+        });
+        $("answer").append(choices);
+      }
+
+      const save = document.createElement("button");
+      save.className = "save";
+      save.id = "saveCard";
+      save.type = "button";
+      save.disabled = true;
+      save.textContent = "留下这一张";
+      save.addEventListener("click", saveCard);
+      $("answer").append(save);
+      $("card").classList.remove("changed");
+      requestAnimationFrame(() => $("card").classList.add("changed"));
+    }
+
+    function updateSave() {
+      $("saveCard").disabled = current.type === "text" ? !textValue : selected.size === 0;
+    }
+
+    function saveCard() {
+      const answer = current.type === "text" ? textValue : [...selected].join("、");
+      today().records.push({ promptId:current.id, kind:current.kind, question:current.question, answer, at:Date.now() });
+      saveState();
+      updateToday();
+      toast(today().records.length <= 5 ? "留下了，+1" : "留下了，今天的记录分已满");
+      chooseCard();
+    }
+
+    function updateToday() {
+      const count = today().records.length;
+      const score = Math.min(count, 5);
+      const totalScore = Object.values(state.days).reduce((sum, day) => sum + Math.min(day.records.length, 5), 0);
+      $("todayCount").textContent = count;
+      $("todayScore").textContent = `+${score}`;
+      $("todayMenuText").textContent = `${count} 个片段`;
+      $("totalScoreText").textContent = `+${totalScore}`;
+      $("progress").innerHTML = Array.from({length:5}, (_,i) => `<i class="${i < score ? "filled" : ""}"></i>`).join("");
+    }
+
+    function recordHtml(record) {
+      const time = new Date(record.at).toLocaleTimeString("zh-CN", {hour:"2-digit", minute:"2-digit"});
+      return `<div class="record"><div class="record-top"><b>${escapeHtml(record.question)}</b><small>${time}</small></div><p>${escapeHtml(record.answer)}</p></div>`;
+    }
+
+    function showToday() {
+      $("recordsTitle").textContent = "今天";
+      $("recordsIntro").textContent = `留下 ${today().records.length} 个片段，记录积分 +${Math.min(today().records.length,5)}。`;
+      $("records").innerHTML = today().records.length ? [...today().records].reverse().map(recordHtml).join("") : '<div class="empty">今天的第一张卡还在路上。</div>';
+      $("recordsDialog").showModal();
+    }
+
+    function showHistory() {
+      const days = Object.entries(state.days).filter(([,day]) => day.records.length).sort(([a],[b]) => b.localeCompare(a));
+      $("recordsTitle").textContent = "往日";
+      $("recordsIntro").textContent = "按天收好，每次导出都会包含这里的全部内容。";
+      $("records").innerHTML = days.length ? days.map(([date,day]) => `<section class="day-group"><div class="day-title"><span>${formatDate(date)}</span><span>+${Math.min(day.records.length,5)}</span></div>${[...day.records].reverse().map(recordHtml).join("")}</section>`).join("") : '<div class="empty">还没有往日记录。</div>';
+      $("recordsDialog").showModal();
+    }
+
+    function exportJson() {
+      const payload = { app:"日迹", version:1, exportedAt:new Date().toISOString(), scoreRule:"每张记录 +1，每日最多 +5", days:state.days };
+      const blob = new Blob([JSON.stringify(payload,null,2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `日迹-${dayKey()}.json`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast("全部记录已经导出");
+    }
+
+    function formatDate(value) {
+      const [year,month,day] = value.split("-").map(Number);
+      return new Date(year,month-1,day).toLocaleDateString("zh-CN", {month:"long", day:"numeric", weekday:"short"});
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
+    }
+
+    let toastTimer;
+    function toast(message) {
+      $("toast").textContent = message;
+      $("toast").classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => $("toast").classList.remove("show"), 1800);
+    }
+
+    $("skip").addEventListener("click", chooseCard);
+    $("openMenu").addEventListener("click", () => $("menuDialog").showModal());
+    $("openToday").addEventListener("click", () => { $("menuDialog").close(); showToday(); });
+    $("openHistory").addEventListener("click", () => { $("menuDialog").close(); showHistory(); });
+    $("scoreSummary").addEventListener("click", () => toast("累计积分来自每天留下的前五张卡"));
+    $("exportJson").addEventListener("click", exportJson);
+    document.querySelectorAll("[data-close]").forEach(button => button.addEventListener("click", () => button.closest("dialog").close()));
+    document.querySelectorAll("dialog").forEach(dialog => dialog.addEventListener("click", event => { if (event.target === dialog) dialog.close(); }));
+
+    const now = new Date();
+    $("dateLabel").innerHTML = `${now.toLocaleDateString("zh-CN", {month:"long", day:"numeric"})}<span>${now.toLocaleDateString("zh-CN", {weekday:"long"})}</span>`;
+    updateToday();
+    chooseCard();
+  </script>
+</body>
+</html>
