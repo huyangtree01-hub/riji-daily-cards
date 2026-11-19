@@ -211,9 +211,10 @@
 
     function currentPhase() {
       const hour = new Date().getHours();
+      if (hour < 8) return "bedtime";
       if (hour < 11) return "morning";
       if (hour < 17) return "day";
-      if (hour < 22) return "evening";
+      if (hour < 21) return "evening";
       return "bedtime";
     }
 
