@@ -140,9 +140,36 @@
 
   <script>
     const anchors = [
-      { id:"anchor-sleep", kind:"今日结算", question:"昨晚大约几点睡着？", hint:"选最接近的一档。", type:"single", choices:["23:00 前","23:00—24:00","00:00—01:00","01:00—02:00","02:00 后","记不清"] },
-      { id:"anchor-screen", kind:"今日结算", question:"今天手机屏幕使用了多久？", hint:"可以先看一眼 iPhone 的屏幕使用时间。", type:"single", choices:["2 小时内","2—4 小时","4—6 小时","6—8 小时","8 小时以上","稍后再看"] },
-      { id:"anchor-fields", kind:"今日结算", question:"今天经过了哪些生活部分？", hint:"可以选择不止一项。", type:"multi", choices:["工作","健康","求职","学习","生活","休息"] }
+      { id:"anchor-sleep", phase:"morning", kind:"清晨", question:"昨晚大约几点睡着？", hint:"早晨先收下昨夜。选最接近的一档。", type:"single", choices:["23:00 前","23:00—24:00","00:00—01:00","01:00—02:00","02:00 后","记不清"] },
+      { id:"anchor-day", phase:"day", kind:"白日", question:"此刻的电量大约有多少？", hint:"不评价，只记下现在。", type:"single", choices:["很充足","还能推进","有点低","快没电了","说不清"] },
+      { id:"anchor-screen", phase:"evening", kind:"入夜", question:"今天手机屏幕使用了多久？", hint:"可以先看一眼 iPhone 的屏幕使用时间。", type:"single", choices:["2 小时内","2—4 小时","4—6 小时","6—8 小时","8 小时以上","稍后再看"] },
+      { id:"anchor-fields", phase:"bedtime", kind:"睡前", question:"今天经过了哪些生活部分？", hint:"可以选择不止一项。", type:"multi", choices:["工作","健康","求职","学习","生活","休息"] }
+    ];
+
+    const timePrompts = [
+      { id:"morning-body", phase:"morning", kind:"清晨", question:"刚醒来的身体是什么天气？", hint:"选最接近的一种。", type:"single", choices:["晴朗","多云","潮湿","起风","雾很重","还没看清"] },
+      { id:"morning-dream", phase:"morning", kind:"梦的余温", question:"昨晚的梦还留下了什么？", hint:"一个人、一处地方或一种感觉都可以。", type:"text", placeholder:"梦里还留着……" },
+      { id:"day-scene", phase:"day", kind:"白日", question:"此刻正在发生什么？", hint:"像给这一分钟拍一张文字照片。", type:"text", placeholder:"我正在……" },
+      { id:"day-block", phase:"day", kind:"白日", question:"刚才是哪一步让你停住了？", hint:"只写具体的一步，不解释自己。", type:"text", placeholder:"我停在……" },
+      { id:"evening-turn", phase:"evening", kind:"入夜", question:"今天哪一刻开始变得不一样？", hint:"可能是一句话、一个消息或一次转身。", type:"text", placeholder:"从……开始" },
+      { id:"evening-finished", phase:"evening", kind:"入夜", question:"今天有什么已经可以放下？", hint:"完成、取消或决定不做，都算。", type:"text", placeholder:"可以放下的是……" },
+      { id:"bedtime-one", phase:"bedtime", kind:"睡前", question:"今天最值得留下的一件事是什么？", hint:"只留一件，其他的让今天带走。", type:"text", placeholder:"今天留下……" },
+      { id:"bedtime-tomorrow", phase:"bedtime", kind:"睡前", question:"明天醒来后，最先照看什么？", hint:"不是完整计划，只留一个方向。", type:"text", placeholder:"明天先照看……" }
+    ];
+
+    const surprises = [
+      { id:"spark-morning-film", phase:"morning", kind:"晨光彩蛋", question:"如果昨晚的梦是一部电影，它叫什么？", hint:"片名可以认真，也可以荒诞。", type:"text", placeholder:"《……》" },
+      { id:"spark-morning-color", phase:"morning", kind:"晨光彩蛋", question:"给今天选一种颜色。", hint:"不需要说明理由。", type:"single", choices:["雾蓝","豆绿","日落橙","葡萄紫","月光白","煤黑"] },
+      { id:"spark-morning-message", phase:"morning", kind:"晨光彩蛋", question:"清晨偷偷递来了一张纸条，上面写着什么？", hint:"写给今天的你。", type:"text", placeholder:"纸条上写着……" },
+      { id:"spark-day-title", phase:"day", kind:"白日彩蛋", question:"给眼前这一幕取一个章节名。", hint:"像小说里短短的一章。", type:"text", placeholder:"这一章叫……" },
+      { id:"spark-day-sound", phase:"day", kind:"白日彩蛋", question:"现在能捕捉到哪三种声音？", hint:"听十秒，再把它们写下来。", type:"text", placeholder:"我听见……" },
+      { id:"spark-day-animal", phase:"day", kind:"白日彩蛋", question:"此刻的你更像哪种动物？", hint:"凭第一反应选。", type:"single", choices:["晒太阳的猫","赶路的蚂蚁","放空的水豚","警觉的兔子","缓慢的蜗牛","盘旋的鸟"] },
+      { id:"spark-evening-replay", phase:"evening", kind:"暮色彩蛋", question:"如果重播今天的一分钟，你会选哪一分钟？", hint:"不用选最重要的，只选想再看一次的。", type:"text", placeholder:"我会重播……" },
+      { id:"spark-evening-odd", phase:"evening", kind:"暮色彩蛋", question:"今天有什么荒谬但有点好笑？", hint:"给今天留一点不严肃。", type:"text", placeholder:"好笑的是……" },
+      { id:"spark-evening-object", phase:"evening", kind:"暮色彩蛋", question:"今天哪件普通东西最有戏？", hint:"杯子、电梯、工牌、晚霞都可以。", type:"text", placeholder:"今天的主角是……" },
+      { id:"spark-bedtime-credits", phase:"bedtime", kind:"夜航彩蛋", question:"给今天写一句片尾字幕。", hint:"灯暗下来之前，留下一行字。", type:"text", placeholder:"片尾字幕：……" },
+      { id:"spark-bedtime-box", phase:"bedtime", kind:"夜航彩蛋", question:"今天要把什么放进记忆盒子？", hint:"可以是一句话、一个表情或一阵风。", type:"text", placeholder:"我想收好……" },
+      { id:"spark-bedtime-music", phase:"bedtime", kind:"夜航彩蛋", question:"今天的片尾曲是哪一首？", hint:"写歌名，或者只写它听起来像什么。", type:"text", placeholder:"片尾曲是……" }
     ];
 
     const prompts = [
@@ -182,6 +209,24 @@
     let textValue = "";
     const $ = id => document.getElementById(id);
 
+    function currentPhase() {
+      const hour = new Date().getHours();
+      if (hour < 11) return "morning";
+      if (hour < 17) return "day";
+      if (hour < 22) return "evening";
+      return "bedtime";
+    }
+
+    const phaseLabels = { morning:"清晨", day:"白日", evening:"入夜", bedtime:"睡前" };
+
+    function promptFitsPhase(prompt, phase) {
+      if (["body-energy","mood-now"].includes(prompt.id)) return ["day","evening"].includes(phase);
+      if (prompt.id.startsWith("tomorrow-")) return ["evening","bedtime"].includes(phase);
+      if (prompt.id.startsWith("mood-")) return phase !== "morning";
+      if (prompt.id.startsWith("work-") || prompt.id.startsWith("job-") || prompt.id.startsWith("body-")) return ["day","evening"].includes(phase);
+      return true;
+    }
+
     function today() {
       const key = dayKey();
       state.days[key] ||= { records:[] };
@@ -197,10 +242,16 @@
     }
 
     function availableCards() {
+      const phase = currentPhase();
       const answered = answeredIds();
-      const pendingAnchors = anchors.filter(x => !answered.has(x.id));
-      const other = prompts.filter(x => !recent.slice(-5).includes(x.id));
-      return pendingAnchors.length && Math.random() < .55 ? pendingAnchors : (other.length ? other : prompts);
+      const pendingAnchors = anchors.filter(x => x.phase === phase && !answered.has(x.id));
+      if (pendingAnchors.length) return pendingAnchors;
+      const unseen = item => !recent.slice(-5).includes(item.id) && !answered.has(item.id);
+      const phasePrompts = [...timePrompts.filter(x => x.phase === phase), ...prompts.filter(x => promptFitsPhase(x, phase))].filter(unseen);
+      const phaseSurprises = surprises.filter(x => x.phase === phase && unseen(x));
+      if (phaseSurprises.length && Math.random() < .34) return phaseSurprises;
+      if (phasePrompts.length) return phasePrompts;
+      return [...timePrompts, ...prompts, ...surprises].filter(x => !recent.slice(-5).includes(x.id));
     }
 
     function chooseCard() {
@@ -214,7 +265,7 @@
 
     function renderCard() {
       $("cardKind").textContent = current.kind;
-      $("cardNumber").textContent = current.id.startsWith("anchor-") ? "今日三项" : "随机一张";
+      $("cardNumber").textContent = current.id.startsWith("anchor-") ? `${phaseLabels[currentPhase()]}一问` : current.id.startsWith("spark-") ? "意外抽到" : `${phaseLabels[currentPhase()]}一张`;
       $("question").textContent = current.question;
       $("hint").textContent = current.hint;
       $("answer").innerHTML = "";
@@ -272,7 +323,7 @@
 
     function saveCard() {
       const answer = current.type === "text" ? textValue : [...selected].join("、");
-      today().records.push({ promptId:current.id, kind:current.kind, question:current.question, answer, at:Date.now() });
+      today().records.push({ promptId:current.id, phase:currentPhase(), surprise:current.id.startsWith("spark-"), kind:current.kind, question:current.question, answer, at:Date.now() });
       saveState();
       updateToday();
       toast(today().records.length <= 5 ? "留下了，+1" : "留下了，今天的记录分已满");
