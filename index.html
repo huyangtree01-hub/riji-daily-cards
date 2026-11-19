@@ -244,7 +244,7 @@
     function availableCards() {
       const phase = currentPhase();
       const answered = answeredIds();
-      const pendingAnchors = anchors.filter(x => x.phase === phase && !answered.has(x.id));
+      const pendingAnchors = anchors.filter(x => x.phase === phase && !answered.has(x.id) && !recent.includes(x.id));
       if (pendingAnchors.length) return pendingAnchors;
       const unseen = item => !recent.slice(-5).includes(item.id) && !answered.has(item.id);
       const phasePrompts = [...timePrompts.filter(x => x.phase === phase), ...prompts.filter(x => promptFitsPhase(x, phase))].filter(unseen);
